@@ -9,13 +9,16 @@ from .models import Post, Group, Follow
 from .forms import PostForm
 from .forms import CommentForm
 
+from django.conf import settings
 
+
+p = settings.PAGIN
 User = get_user_model()
 
 
 def index(request):
     post_list = Post.objects.all()
-    paginator = Paginator(post_list, 10)
+    paginator = Paginator(post_list, p)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
     return render(request, "index.html", {"page": page})
@@ -24,7 +27,7 @@ def index(request):
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
     post_list = group.posts.all()
-    paginator = Paginator(post_list, 10)
+    paginator = Paginator(post_list, p)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
     return render(request, "group.html", {"group": group, "page": page})
@@ -45,21 +48,16 @@ def new_post(request):
 def profile(request, username):
     author = get_object_or_404(User, username=username)
     post_list = author.posts.all()
-    paginator = Paginator(post_list, 10)
+    paginator = Paginator(post_list, p)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
-    post_count = author.posts.count()
     if request.user.is_authenticated:
         fil = Follow.objects.filter(user=request.user, author=author).exists()
         following = request.user.is_authenticated and fil
     else:
         following = False
-    follows = author.follower.count()
-    followers = author.following.count()
     return render(request, "profile.html",
-                  {"author": author, "page": page, "post_count": post_count,
-                   "following": following, "follows": follows,
-                   "followers": followers})
+                  {"author": author, "page": page, "following": following})
 
 
 def post_view(request, username, post_id):
@@ -71,12 +69,9 @@ def post_view(request, username, post_id):
         following = request.user.is_authenticated and fil
     else:
         following = False
-    follows = profile.author.follower.count()
-    followers = profile.author.following.count()
-    form = CommentForm(instance=None)
+    form = CommentForm()
     context = {"author": profile.author, "post": profile, "comments": comments,
-               "form": form, "following": following, "followers": followers,
-               "follows": follows}
+               "form": form, "following": following}
     return render(request, "post.html", context)
 
 
@@ -111,7 +106,7 @@ def add_comment(request, username, post_id):
 @login_required
 def follow_index(request):
     posts = Post.objects.filter(author__following__user=request.user)
-    paginator = Paginator(posts, 10)
+    paginator = Paginator(posts, p)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
     return render(request, "follow.html", {"page": page,

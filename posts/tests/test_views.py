@@ -113,16 +113,12 @@ class PostPagesTests(TestCase):
         response = self.authorized_client.get(reverse('posts:index'))
         # Взяли первый элемент из списка и проверили, что его содержание
         # совпадает с ожидаемым
-        post_text_0 = response.context.get('page')[0].text
-        post_group_0 = response.context.get('page')[0].group
-        post_author_0 = response.context.get('page')[0].author
-        post_pub_date_0 = response.context.get('page')[0].pub_date
-        post_image_0 = response.context.get('page')[0].image
-        self.assertEqual(post_text_0, 'Тестовый текст')
-        self.assertEqual(post_group_0, self.group)
-        self.assertEqual(post_author_0, self.user)
-        self.assertEqual(post_pub_date_0, self.post.pub_date)
-        self.assertEqual(post_image_0, self.post.image)
+        post_0 = response.context.get('page')[0]
+        self.assertEqual(post_0.text, 'Тестовый текст')
+        self.assertEqual(post_0.group, self.group)
+        self.assertEqual(post_0.author, self.user)
+        self.assertEqual(post_0.pub_date, self.post.pub_date)
+        self.assertEqual(post_0.image, self.post.image)
 
     def test_post_group_list_page_show_correct_context(self):
         """Шаблон group.html сформирован с правильным контекстом."""
@@ -130,16 +126,12 @@ class PostPagesTests(TestCase):
             'posts:group', kwargs={'slug': self.group.slug}))
         # Взяли первый элемент из списка и проверили, что его содержание
         # совпадает с ожидаемым
-        post_text_0 = response.context.get('page')[0].text
-        post_group_0 = response.context.get('page')[0].group
-        post_author_0 = response.context.get('page')[0].author
-        post_pub_date_0 = response.context.get('page')[0].pub_date
-        post_image_0 = response.context.get('page')[0].image
-        self.assertEqual(post_text_0, 'Тестовый текст')
-        self.assertEqual(post_group_0, self.group)
-        self.assertEqual(post_author_0, self.user)
-        self.assertEqual(post_pub_date_0, self.post.pub_date)
-        self.assertEqual(post_image_0, self.post.image)
+        post_0 = response.context.get('page')[0]
+        self.assertEqual(post_0.text, 'Тестовый текст')
+        self.assertEqual(post_0.group, self.group)
+        self.assertEqual(post_0.author, self.user)
+        self.assertEqual(post_0.pub_date, self.post.pub_date)
+        self.assertEqual(post_0.image, self.post.image)
 
     def test_new_page_show_correct_context(self):
         """1 Шаблон create_or_update_post.html сформирован с правильным
@@ -183,18 +175,13 @@ class PostPagesTests(TestCase):
 
         # Взяли первый элемент из списка и проверили, что его содержание
         # совпадает с ожидаемым
-        post_text_0 = response.context.get('page')[0].text
-        post_group_0 = response.context.get('page')[0].group
-        post_author_0 = response.context.get('page')[0].author
-        post_pub_date_0 = response.context.get('page')[0].pub_date
-        author_username_0 = response.context.get('page')[0].author.username
-        post_image_0 = response.context.get('page')[0].image
-        self.assertEqual(post_text_0, 'Тестовый текст')
-        self.assertEqual(post_group_0, self.group)
-        self.assertEqual(post_author_0, self.user)
-        self.assertEqual(post_pub_date_0, self.post.pub_date)
-        self.assertEqual(author_username_0, self.user.username)
-        self.assertEqual(post_image_0, self.post.image)
+        post_0 = response.context.get('page')[0]
+        self.assertEqual(post_0.text, 'Тестовый текст')
+        self.assertEqual(post_0.group, self.group)
+        self.assertEqual(post_0.author, self.user)
+        self.assertEqual(post_0.pub_date, self.post.pub_date)
+        self.assertEqual(post_0.author.username, self.user.username)
+        self.assertEqual(post_0.image, self.post.image)
 
     def test_post_page_show_correct_context(self):
         """Шаблон post.html сформирован с правильным контекстом для
@@ -205,18 +192,13 @@ class PostPagesTests(TestCase):
 
         # Взяли первый элемент из списка и проверили, что его содержание
         # совпадает с ожидаемым
-        post_text_0 = response.context.get('post').text
-        post_group_0 = response.context.get('post').group
-        post_author_0 = response.context.get('post').author
-        post_pub_date_0 = response.context.get('post').pub_date
-        author_username_0 = response.context.get('post').author.username
-        post_image_0 = response.context.get('post').image
-        self.assertEqual(post_text_0, 'Тестовый текст')
-        self.assertEqual(post_group_0, self.group)
-        self.assertEqual(post_author_0, self.user)
-        self.assertEqual(post_pub_date_0, self.post.pub_date)
-        self.assertEqual(author_username_0, self.user.username)
-        self.assertEqual(post_image_0, self.post.image)
+        post_0 = response.context.get('post')
+        self.assertEqual(post_0.text, 'Тестовый текст')
+        self.assertEqual(post_0.group, self.group)
+        self.assertEqual(post_0.author, self.user)
+        self.assertEqual(post_0.pub_date, self.post.pub_date)
+        self.assertEqual(post_0.author.username, self.user.username)
+        self.assertEqual(post_0.image, self.post.image)
 
     def test_post_edit_page_show_correct_context(self):
         """2 Шаблон create_or_update_post.html сформирован с правильным
@@ -265,32 +247,30 @@ class PostPagesTests(TestCase):
         """
         first_author = get_user_model().objects.create(username='First')
         second_author = get_user_model().objects.create(username='Second')
-        third_author = get_user_model().objects.create(username='Third')
         first_author_client = Client()
         second_author_client = Client()
-        third_author_client = Client()
         first_author_client.force_login(first_author)
         second_author_client.force_login(second_author)
-        third_author_client.force_login(third_author)
-        follow_count = Follow.objects.count()
         # Подписка первого автора на второго
-        first_author_client.get(reverse(
-            'posts:profile_follow', args=['Second']))
-        self.assertEqual(Follow.objects.count(), follow_count + 1)
-        Post.objects.filter(author__following__user=self.user)
-        response_first = first_author_client.get(reverse(
-            'posts:follow_index'))
-        response_third = third_author_client.get(reverse(
-            'posts:follow_index'))
-        Post.objects.filter(author__following__user=self.user)
-        self.assertEqual(response_first.status_code, 200)
-        self.assertEqual(response_third.status_code, 200)
+        Follow.objects.create(user=first_author, author=second_author)
+        # Публикуем от него пост
+        Post.objects.create(author=second_author, text='new_post')
+        # Проверяем от имени первого пост
+        response = first_author_client.get(reverse('posts:follow_index'))
+        self.assertContains(response, 'new_post')
+        # Отписываемся от пользователя
+        Follow.objects.filter(user=first_author,
+                              author=second_author).delete()
+        # Проверяю от его имени пост
+        response = second_author_client.get(reverse('posts:follow_index'))
+        self.assertNotContains(response, 'new_post')
 
     def test_comments(self):
+        """Только авторизированный пользователь может комментировать посты"""
         user = get_user_model().objects.create_user(username='Bruno')
         user_client = Client()
         user_client.force_login(user)
-        response = user_client.get(reverse(
+        response = self.authorized_client.post(reverse(
             'posts:add_comment', kwargs={'username': self.user.username,
                                          'post_id': self.post.id}))
         self.assertEqual(response.url,
@@ -310,8 +290,7 @@ class CacheTest(TestCase):
         response = client.get(reverse('posts:index'))
         self.assertEqual(temp_response.content, response.content)
         cache.clear()
-        Post.objects.create(
-            text='Lorem impsum', author=user)
+        Post.objects.create(text='Lorem impsum', author=user)
         response_new = client.get(reverse('posts:index'))
         self.assertNotEqual(temp_response.content, response_new)
 
