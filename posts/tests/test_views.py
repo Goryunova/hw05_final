@@ -10,7 +10,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from django import forms
 
-from posts.models import Post, Group, User, Follow
+from posts.models import Post, Group, User, Follow, Comment
 
 User = get_user_model()
 
@@ -72,6 +72,11 @@ class PostPagesTests(TestCase):
             group=cls.group,
             image=uploaded
         )
+        cls.comment = Comment.objects.create(
+            author=cls.user,
+            text='Комментарий',
+            post=cls.post
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -99,6 +104,13 @@ class PostPagesTests(TestCase):
                 'create_or_update_post.html'
         }
 
+    def repeat_check(self, parameter):
+        self.assertEqual(parameter.text, 'Тестовый текст')
+        self.assertEqual(parameter.group, self.group)
+        self.assertEqual(parameter.author, self.user)
+        self.assertEqual(parameter.pub_date, self.post.pub_date)
+        self.assertEqual(parameter.image, self.post.image)
+
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         # Проверяем, что при обращении к name вызывается
@@ -114,11 +126,7 @@ class PostPagesTests(TestCase):
         # Взяли первый элемент из списка и проверили, что его содержание
         # совпадает с ожидаемым
         post_0 = response.context.get('page')[0]
-        self.assertEqual(post_0.text, 'Тестовый текст')
-        self.assertEqual(post_0.group, self.group)
-        self.assertEqual(post_0.author, self.user)
-        self.assertEqual(post_0.pub_date, self.post.pub_date)
-        self.assertEqual(post_0.image, self.post.image)
+        self.repeat_check(post_0)
 
     def test_post_group_list_page_show_correct_context(self):
         """Шаблон group.html сформирован с правильным контекстом."""
@@ -127,11 +135,7 @@ class PostPagesTests(TestCase):
         # Взяли первый элемент из списка и проверили, что его содержание
         # совпадает с ожидаемым
         post_0 = response.context.get('page')[0]
-        self.assertEqual(post_0.text, 'Тестовый текст')
-        self.assertEqual(post_0.group, self.group)
-        self.assertEqual(post_0.author, self.user)
-        self.assertEqual(post_0.pub_date, self.post.pub_date)
-        self.assertEqual(post_0.image, self.post.image)
+        self.repeat_check(post_0)
 
     def test_new_page_show_correct_context(self):
         """1 Шаблон create_or_update_post.html сформирован с правильным
@@ -176,12 +180,8 @@ class PostPagesTests(TestCase):
         # Взяли первый элемент из списка и проверили, что его содержание
         # совпадает с ожидаемым
         post_0 = response.context.get('page')[0]
-        self.assertEqual(post_0.text, 'Тестовый текст')
-        self.assertEqual(post_0.group, self.group)
-        self.assertEqual(post_0.author, self.user)
-        self.assertEqual(post_0.pub_date, self.post.pub_date)
+        self.repeat_check(post_0)
         self.assertEqual(post_0.author.username, self.user.username)
-        self.assertEqual(post_0.image, self.post.image)
 
     def test_post_page_show_correct_context(self):
         """Шаблон post.html сформирован с правильным контекстом для
@@ -193,12 +193,8 @@ class PostPagesTests(TestCase):
         # Взяли первый элемент из списка и проверили, что его содержание
         # совпадает с ожидаемым
         post_0 = response.context.get('post')
-        self.assertEqual(post_0.text, 'Тестовый текст')
-        self.assertEqual(post_0.group, self.group)
-        self.assertEqual(post_0.author, self.user)
-        self.assertEqual(post_0.pub_date, self.post.pub_date)
+        self.repeat_check(post_0)
         self.assertEqual(post_0.author.username, self.user.username)
-        self.assertEqual(post_0.image, self.post.image)
 
     def test_post_edit_page_show_correct_context(self):
         """2 Шаблон create_or_update_post.html сформирован с правильным
@@ -228,7 +224,7 @@ class PostPagesTests(TestCase):
         self.assertEqual(field_not_empty, self.post)
 
     def test_follow(self):
-        """Тест работы подписки и отписки от автора"""
+        """Тест работы подписки на автора"""
         first_user = get_user_model().objects.create_user(username='First')
         first_user_client = Client()
         first_user_client.force_login(first_user)
@@ -236,6 +232,13 @@ class PostPagesTests(TestCase):
             'posts:profile_follow', kwargs={'username': self.user.username}))
         follower = Follow.objects.filter(user=first_user).exists()
         self.assertEqual(follower, True)
+
+    def test_unfollow(self):
+        """Тест работы отписки от автора"""
+        first_user = get_user_model().objects.create_user(username='First')
+        first_user_client = Client()
+        first_user_client.force_login(first_user)
+        Follow.objects.create(user=self.user, author=first_user)
         first_user_client.get(reverse(
             'posts:profile_unfollow', kwargs={'username': self.user.username}))
         follower = Follow.objects.filter(user=first_user).exists()
@@ -261,20 +264,18 @@ class PostPagesTests(TestCase):
         # Отписываемся от пользователя
         Follow.objects.filter(user=first_author,
                               author=second_author).delete()
-        # Проверяю от его имени пост
+        # Проверяем от его имени пост
         response = second_author_client.get(reverse('posts:follow_index'))
         self.assertNotContains(response, 'new_post')
 
     def test_comments(self):
         """Только авторизированный пользователь может комментировать посты"""
-        user = get_user_model().objects.create_user(username='Bruno')
-        user_client = Client()
-        user_client.force_login(user)
-        response = self.authorized_client.post(reverse(
-            'posts:add_comment', kwargs={'username': self.user.username,
-                                         'post_id': self.post.id}))
-        self.assertEqual(response.url,
-                         f'/{self.user.username}/{str(self.post.id)}/')
+        response = self.authorized_client.get(reverse(
+            'posts:post', args=[self.post.author.username, self.post.id]))
+        comment = response.context['comments'][0]
+        self.assertEqual(comment.post, self.comment.post)
+        self.assertEqual(comment.text, self.comment.text)
+        self.assertEqual(comment.author, self.comment.author)
 
 
 class CacheTest(TestCase):
